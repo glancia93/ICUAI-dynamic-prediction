@@ -123,6 +123,7 @@ def inverse_reduce_scale(data, cov, zero_one= False):
         Min, Max = minmax_dict[cov]
         DELTA = Max-Min
         A, B = 1/DELTA, -(Max+Min)/DELTA
+    
     else:
         minmax_dict = {'HR':[40, 150], 
                        'ABPm':[40, 120], 
@@ -148,13 +149,13 @@ def prepare_data_CNN(Xtrain, Xtest, list_covs, pooling= 9, mask_amplitude= 60):
     ####
     xtrain, xtest = Xtrain.copy(), Xtest.copy()
     
-    ###standardizza
+    ###apply linear transform
     for kk in range(0, len(list_covs)):
         xtrain[:, :, kk] = reduce_scale(Xtrain[:, :, kk], list_covs[kk])
         xtest[:, :, kk] = reduce_scale(Xtest[:, :, kk], list_covs[kk])
     
     ### ### ###
-    ### riduci
+    ### make pooling
     xtrain_, xtest_ = xtrain.copy(), xtest.copy()
     xtrain = np.empty((Xtrain.shape[0], int(Xtrain.shape[1]/pooling), Xtrain.shape[2]))
     xtest = np.empty((Xtest.shape[0], int(Xtest.shape[1]/pooling), Xtest.shape[2]))
@@ -224,10 +225,10 @@ def get_data_mlp(inst, mfs, list_covs):
     #for kk in range(0, len(list_covs)):
     #    xx[:, :, kk] = reduce_scale(xx[:, :, kk], list_covs[kk])
 
-    #### ESTRAI FEATS MLP
+    #### Get features for MLP model
     X= transform_mlp_data(xx,  list_covs)
-    #X= np.concatenate((X, mfs.mean(axis= 1).reshape(-1, 1)), axis= 1)
-    ### SCALING
+
+    ### apply Z-scaling
     Zsclaer = StandardScaler()
     Zsclaer.fit(X)
     return Zsclaer.transform(X)
@@ -256,34 +257,38 @@ def get_data_cnn(inst, labels, mfs, list_covs, pooling= False, pool_size= 9, zer
         return np.concatenate((xx, np.expand_dims(mfs, axis= 2)), axis= 2), labels
     
     
-    ### pre-processing per le reti-2D
-### funzione per trasformare i dati 1D in immagini 2D
 def TS_become_Matrix(ts, dims):
-    m, n  = dims # prendi le dimenzioni
-    matrix = np.zeros(dims) #inizializza la matrice di uscita
-    T = ts.shape[0] #lunghezza TS
-    height = 1.0/m  # altezza griglia
-    width = T/n  # larghezza griglia
+    
+    ## transform the sample 1-D data sample (ts) into a 2-D grid-structured data sample (with dimnesion equal to dims)
+    
+    m, n  = dims 
+    matrix = np.zeros(dims) 
+    T = ts.shape[0] 
+    height = 1.0/m  
+    width = T/n 
     ###
         
-    ### scegli indici -i
+    ### count on the first dimension
     ii = ((1-ts)/height).astype(int)
     cond_i = ii>=m
     ii[cond_i] = m-1
     
-    ### scegli indice j
+    ### count on the second dimension
     time = 1+np.arange(0, T, 1)
     jj =  ((time)/width)
     cond_jj = 1.*jj.astype(int) == np.round(jj, 3)
     jj[cond_jj] = jj[cond_jj].astype(int)-1
     jj = jj.astype(int)
     
-    #### binning
+    #### make binning (1-D sample into 2-D grid-structured sample)
     matrix_, xbins_, ybins_ = np.histogram2d(ii, jj, bins= [m, n])
     return matrix_/matrix_.sum()
 
-### prepara il tensore di dati 1D in dati 2D
+
 def prepeare_data_image(X, dims):
+    
+    ### Take the input data X (1-D time-series instances) and transform it into 2-D time-series instances
+    
     image_ = np.empty((X.shape[0], dims[0], dims[1], X.shape[2]))
     
     for feat in range(0, X.shape[2]):
@@ -310,7 +315,8 @@ def get_data_cnn2d(inst, labels, mfs, list_covs, dims= (20, 24)):
     
     
     
-    ###################################
+###################################
+# 1-D CNN model
 def CNN_(X_train, Y_train, 
          X_test, Y_test, 
          pooling = True, 
@@ -384,7 +390,7 @@ def CNN_(X_train, Y_train,
         X = layers.MaxPool1D(pool_size = poolsize_CNN, padding= 'same')(X)
         X = layers.Dropout(rate = DropOut_CNN)(X)
 
-    ### flattern   
+    ### make feat. maps falt 
     X = layers.Flatten()(X)
     rho_rate = np.sqrt((stddev_pred**2)/(1+stddev_pred**2))
     X= layers.GaussianNoise(stddev= stddev_pred)(X)
@@ -410,14 +416,14 @@ def CNN_(X_train, Y_train,
     #auc_train= IntervalEvaluation(validation_data=(X_train, Y_train), interval=5)
     #auc_test= IntervalEvaluation(validation_data=(X_test, Y_test), interval=5)
     
-    ###lr_scheduler
+    ###lr_scheduler (learning scheduler)
     def LRScheduler(epoch, lr= lr, rate_decay= rate_decay):
         ### linear decreasing
         lrate = lr -rate_decay 
         return lrate
     lrate = tf.keras.callbacks.LearningRateScheduler(LRScheduler)
     
-    ###early_stopping
+    ###early_stopping crriterion (as callback)
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', 
                                     min_delta=0, 
                                     patience= patience)
@@ -432,11 +438,9 @@ def CNN_(X_train, Y_train,
     
     
     return mymodel
-    
-    
-    
-    ##### CNN 2D #####
-#### definisci rete neurale 2D
+        
+##### CNN 2D #####
+#### 2D-CNN
 def CNN_2D(Xtrain, Ytrain, 
            Xtest, Ytest, 
            filters_CNN= 8, 
@@ -459,7 +463,7 @@ def CNN_2D(Xtrain, Ytrain,
     
     Inputs = keras.Input(shape=input_shape)
     ### ### ### ### ###
-    ### 1st_layer ## ##
+    ### 1st_hidden_layer ## ##
     X = layers.Conv2D(filters= filters_CNN, 
                           kernel_size= kernel_size_CNN,
                           activation= activation, 
@@ -478,10 +482,11 @@ def CNN_2D(Xtrain, Ytrain,
         X = layers.GaussianDropout(rate = DropOut_CNN)(X)
 
     ### ### #### ### ###
-    ### flattern   
+    ### make feat, maps flat
     X = layers.Flatten()(X)
     X = layers.GaussianNoise(stddev= stddev_pred)(X)
     Xfinal = layers.Dense(units = 1, activation= 'sigmoid')(X) 
+    
     ##define model
     mymodel = tf.keras.models.Model(Inputs, Xfinal)
     
