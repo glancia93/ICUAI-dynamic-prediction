@@ -8,25 +8,16 @@ from tensorflow.keras.utils import plot_model
 from tensorflow.keras.callbacks import Callback, ReduceLROnPlateau,LearningRateScheduler
 
 ###
-import pywt
 from datetime import datetime as dt
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.random as npr
 import seaborn as sns
-import numpy.fft as npf
 import pandas as pd
-import tsfresh.feature_extraction.feature_calculators as tsfeat
-from scipy.stats import iqr
 
 ##################
-from sklearn.neighbors import KernelDensity
-from sklearn.model_selection import KFold, train_test_split
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.metrics import roc_auc_score, roc_curve
-from sklearn.svm import LinearSVC
-from sklearn.feature_selection import SelectFromModel
-from sklearn.metrics.pairwise import euclidean_distances, cosine_similarity, rbf_kernel
 
 ###
 from scipy.signal import argrelextrema, hamming, tukey, gaussian, butter, filtfilt, boxcar
