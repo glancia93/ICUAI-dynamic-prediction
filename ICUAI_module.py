@@ -185,24 +185,6 @@ def zeroone_TS(X):
 def zeromean_TS(X):
     Y = X.copy()
     return Y-np.mean(Y)
-
-
-def meanpooling_mf(mftrain, mftest, pooling= 9):
-    ### prepara la feature delle missing_flags per 
-    mftrain_, mftest_ = mftrain.copy(), mftest.copy()
-    mftrain_ = np.apply_along_axis(meanpooling, 1, mftrain_.copy(), pooling= pooling)
-    mftest_ = np.apply_along_axis(meanpooling, 1, mftest_.copy(), pooling= pooling)
-    mftrain_, mftest_ = np.expand_dims(mftrain_, axis= 2), np.expand_dims(mftest_, axis= 2)
-    return mftrain_, mftest_
-
-
-def extract_TS_CNN(X):
-    Z = np.empty((X.shape[0],X.shape[1], 3))
-    Z[:, :, 0] = np.gradient(X, axis= 1)
-    Z[:, :, 1] = np.gradient(Z[:, :, 0], axis= 1)
-    Z[:, :, 2] = cumtrapz(X, initial= 0, axis= 1)/X.shape[1]
-    #Z[:, :, 3] = cumtrapz(Z[:, :, 0]**2, initial= 0)/X.shape[1] ##kinetic energy
-    return Z
    
 def mild_convolution(X, W):
     Y = np.pad(X, pad_width=(int(W.size/2), int(W.size/2)), mode= 'edge')
@@ -221,23 +203,6 @@ def vanilla_apodization(X):
     Y = X.copy()
     W = tukey(Ndim, alpha= 50e-2)
     return Y*W
-
-def cosine_distribution(N= 5):
-    Xn = np.linspace(0, 1, N, endpoint= True)
-    cs = np.cos(2*np.pi*Xn)
-    cs_prob = (cs-cs.min()+1e-8)/np.sum(cs-cs.min()+1e-8)
-    return cs_prob
-
-def exp_distribution(N= 5):
-    Xn = np.arange(0, N, 1)
-    cexp = np.exp(-Xn)
-    cexp_prob = cexp/np.sum(cexp)
-    return cexp_prob
-
-def gaussian_distribution(N= 5):
-    Cnormal = gaussian(N, std= 1)/gaussian(N, std= 1).sum()
-    Cnormal_prob = Cnormal/np.sum(Cnormal)
-    return Cnormal_prob
 
 def GCU(X):
     "Growing Cosine Unit -- Activation Function"
