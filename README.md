@@ -6,4 +6,5 @@ It contains all the main functions developed to analyse the EHR data by means of
 
 2. Explanability via SMOE scale.py: module containing the code utilized in the section "Explanability via SMOE scale" 
 
+3. Future directions: Multi-Branch CNN model for forecasting a high CRP increase.py:  module containing the code utilized in the section "Future directions: Multi-Branch CNN model for forecasting a high CRP increase" 
 
