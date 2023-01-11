@@ -8,3 +8,5 @@ It contains all the main functions developed to analyse the EHR data by means of
 
 3. Future directions: Multi-Branch CNN model for forecasting a high CRP increase.py:  module containing the code utilized in the section "Future directions: Multi-Branch CNN model for forecasting a high CRP increase" 
 
+4. landmark AUC validation: code used to validate the landmark model and estimate the proability of infection
+
